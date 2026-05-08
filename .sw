@@ -306,6 +306,8 @@ FastPanel/Nginx сам разрулит поддомены по vhost/server_nam
 - Зафиксировано: первого администратора Matrix создавать только латиницей и цифрами, например admin или stackworks_admin.
 - Проверено: registration_shared_secret присутствует в /opt/swchat/data/synapse/homeserver.yaml.
 - Зафиксировано: bootstrap-регистрация администратора через register_new_matrix_user разрешена.
+- При входе в Element пойман M_LIMIT_EXCEEDED после нескольких попыток авторизации.
+- Зафиксировано: M_LIMIT_EXCEEDED означает временный rate limit Synapse, а не ошибку SSL/proxy или отключённую регистрацию.
 
 ## Текущий этап установки
 
@@ -321,14 +323,15 @@ SWChat Core локально работает на новом отдельном
 - Matrix Synapse на Core с private IP 192.168.0.141;
 - локальный доступ FastPanel → Core:8008 подтверждён;
 - публичный доступ Internet → FastPanel → Core подтверждён;
-- registration_shared_secret найден.
+- registration_shared_secret найден;
+- временный rate limit авторизации Synapse активировался после повторных попыток входа.
 
 ## Следующий шаг
 
 Следующий этап:
-- создать первого пользователя Matrix командой register_new_matrix_user с ASCII localpart: admin или stackworks_admin;
-- если пользователь уже создан, проверить логин через Element по homeserver https://matrix.stackworks.ru;
+- подождать сброса rate limit или временно ослабить лимиты авторизации в homeserver.yaml;
+- проверить создание пользователя stackworks_admin через register_new_matrix_user;
+- проверить вход через Element по homeserver https://matrix.stackworks.ru;
 - закрыть прямой доступ к Core:8008 из интернета и разрешить только 192.168.0.221;
-- проверить вход через официальный Element/Matrix клиент;
 - проверить создание комнаты, отправку сообщений и файлов;
 - только после этого готовить frontend и свой Android/Web-клиент.
