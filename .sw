@@ -302,6 +302,8 @@ FastPanel/Nginx сам разрулит поддомены по vhost/server_nam
 - Зафиксировано: если stackworks.ru и wildcard-поддомены уже направлены на FastPanel, matrix.stackworks.ru можно разрулить созданием отдельного сайта/vhost в FastPanel без отдельной DNS-записи.
 - Проверено: https://matrix.stackworks.ru/_matrix/client/versions через FastPanel reverse proxy успешно вернул Matrix API JSON.
 - Зафиксировано: публичный HTTPS endpoint Matrix через FastPanel работает.
+- При создании первого пользователя поймана ошибка UnicodeEncodeError из-за битого/кириллического символа в localpart имени пользователя.
+- Зафиксировано: первого администратора Matrix создавать только латиницей и цифрами, например admin или stackworks_admin.
 
 ## Текущий этап установки
 
@@ -321,8 +323,8 @@ SWChat Core локально работает на новом отдельном
 ## Следующий шаг
 
 Следующий этап:
+- повторить создание первого пользователя Matrix с ASCII localpart: admin или stackworks_admin;
 - закрыть прямой доступ к Core:8008 из интернета и разрешить только 192.168.0.221;
-- создать первого пользователя Matrix;
 - проверить вход через официальный Element/Matrix клиент на homeserver https://matrix.stackworks.ru;
 - проверить создание комнаты, отправку сообщений и файлов;
 - только после этого готовить frontend и свой Android/Web-клиент.
