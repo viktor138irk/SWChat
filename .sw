@@ -107,7 +107,7 @@ ArtistFlow должен оставаться нетронутым:
 SWChat Core разворачивается на отдельном сервере.
 
 Базовая схема:
-- Matrix Synapse — отдельный сервис на 127.0.0.1:8008;
+- Matrix Synapse — отдельный сервис на приватном IP:8008;
 - PostgreSQL — отдельная база для Matrix/SWChat;
 - backend/админка SWChat — отдельный локальный сервис;
 - web-client — на FastPanel-сервере в будущем;
@@ -123,7 +123,26 @@ FastPanel reverse proxy → SWChat Core.
 Поток трафика:
 - пользователь → FastPanel/Nginx;
 - FastPanel SSL/proxy → Core-сервер Matrix Synapse;
-- Synapse работает локально на Core.
+- Synapse работает на Core через приватную сеть между серверами.
+
+## Приватная сеть между серверами
+
+Зафиксировано: FastPanel proxy сервер и SWChat Core можно объединить в приватную локальную сеть/VPN.
+
+Это предпочтительная production-схема.
+
+Преимущества:
+- Matrix port 8008 не публикуется в интернет;
+- FastPanel proxy подключается к Synapse по private IP;
+- снижается поверхность атаки;
+- упрощается firewall;
+- Core-сервер становится изолированным backend-узлом.
+
+Рекомендованная схема:
+- FastPanel proxy имеет public IP;
+- Core-сервер использует private IP/VPN IP;
+- proxy_pass идёт на private IP Core-сервера;
+- прямой доступ к Core:8008 из интернета закрыт.
 
 ## Вариант с другим FastPanel-сервером
 
@@ -173,6 +192,7 @@ FastPanel reverse proxy → SWChat Core.
 - PostgreSQL в контейнере;
 - Matrix Synapse в контейнере;
 - FastPanel reverse proxy на отдельном сервере;
+- приватная сеть/VPN между серверами;
 - coturn позже;
 - отдельные DNS-записи на proxy FastPanel сервер.
 
@@ -254,6 +274,9 @@ FastPanel reverse proxy → SWChat Core.
 - Зафиксирована схема ограничения доступа к Matrix port 8008 только с IP FastPanel proxy сервера.
 - Зафиксировано: SSL и публичные домены обслуживаются FastPanel/Nginx.
 - Зафиксировано: Synapse остаётся изолированным на Core-сервере.
+- Зафиксировано: между FastPanel proxy и SWChat Core можно использовать приватную сеть/VPN.
+- Создан docs/PRIVATE_NETWORK_BETWEEN_SERVERS.md.
+- Зафиксировано: private network между серверами является предпочтительной production-схемой.
 
 ## Текущий этап установки
 
@@ -262,6 +285,7 @@ SWChat Core локально работает на новом отдельном
 Текущий выбранный этап:
 - отдельный FastPanel reverse proxy сервер;
 - публичный SSL через FastPanel;
+- приватная сеть/VPN между FastPanel и Core;
 - Matrix Synapse только на Core.
 
 После настройки DNS ожидается:
@@ -271,10 +295,12 @@ SWChat Core локально работает на новом отдельном
 ## Следующий шаг
 
 Следующий этап:
+- объединить FastPanel proxy и Core в приватную сеть/VPN;
+- настроить private IP между серверами;
+- перевести proxy_pass на private IP Core;
+- закрыть прямой доступ к Core:8008 из интернета;
 - настроить DNS A-записи matrix.stackworks.ru и chat.stackworks.ru на FastPanel proxy сервер;
 - выпустить SSL в FastPanel для matrix.stackworks.ru;
-- добавить Nginx proxy до Core Server:8008;
-- ограничить доступ к Core:8008 только FastPanel proxy IP;
 - проверить HTTPS endpoint через браузер и curl;
 - создать первого пользователя Matrix;
 - проверить вход через официальный Element/Matrix клиент;
