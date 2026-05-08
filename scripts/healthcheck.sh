@@ -2,7 +2,7 @@
 
 set -e
 
-echo "== WSMessenger Healthcheck =="
+echo "== SWChat Healthcheck =="
 echo
 
 echo "[INFO] Docker"
@@ -25,6 +25,16 @@ ss -tulpn | grep 8008 || true
 
 echo
 
+echo "[INFO] Public HTTP/HTTPS Ports"
+ss -tulpn | grep -E ':80|:443' || true
+
+echo
+
+echo "[INFO] Matrix Local Endpoint"
+curl -s http://127.0.0.1:8008/_matrix/client/versions || true
+
+echo
+
 echo "[INFO] Disk Usage"
 df -h
 
@@ -35,4 +45,4 @@ free -m
 
 echo
 
-echo "[DONE] Healthcheck complete"
+echo "[DONE] SWChat healthcheck complete"
