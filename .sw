@@ -279,6 +279,10 @@ FastPanel proxy сервер и SWChat Core объединены в локаль
 - FluffyChat импортирован в SWChat-App.
 - Проверен pubspec.yaml FluffyChat в SWChat-App.
 - Зафиксирована необходимость SWChat Admin Panel для управления пользователями и модерации.
+- SWChat-App успешно собран и запущен на Android-телефоне Samsung SM S928B.
+- Rust/rustup/cargo установлены на Windows для сборки flutter_vodozemac/libvodozemac.
+- Ошибка libvodozemac_bindings_dart.so устранена после установки Rust.
+- Авторизация в приложении SWChat-App/FluffyChat через homeserver https://matrix.stackworks.ru успешно прошла.
 
 ## Текущий этап установки
 
@@ -287,15 +291,16 @@ SWChat Core локально работает на новом отдельном
 Публичный HTTPS endpoint через FastPanel reverse proxy работает:
 - https://matrix.stackworks.ru/_matrix/client/versions возвращает Matrix API JSON.
 
-Клиентский репозиторий SWChat-App содержит импортированный FluffyChat и готов к первичной сборке.
+Клиентский репозиторий SWChat-App содержит импортированный FluffyChat.
+
+SWChat-App успешно запускается на Android и авторизуется на нашем Matrix homeserver.
 
 ## Следующий шаг
 
 Следующий этап:
-- собрать SWChat-App локально: flutter pub get, flutter run или flutter build apk;
-- затем начать ребрендинг: название SWChat, package id, default homeserver matrix.stackworks.ru, логотипы и Telegram-like UX;
-- проверить вход через Element по homeserver https://matrix.stackworks.ru;
+- начать первичный ребрендинг SWChat-App: название SWChat, package id, default homeserver matrix.stackworks.ru, логотипы;
+- убрать matrix.org/default FluffyChat wording из onboarding;
+- зафиксировать Telegram-like UX направление в клиенте;
 - закрыть прямой доступ к Core:8008 из интернета и разрешить только 192.168.0.221;
 - проверить создание комнаты, отправку сообщений и файлов;
-- после стабильного теста начать проектирование собственного web/android клиента с Telegram-like UX обычных чатов, а не Matrix-комнат;
 - отдельным этапом поднять готовую Synapse Admin UI или начать SWChat Admin Panel.
