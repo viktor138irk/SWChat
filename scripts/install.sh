@@ -99,10 +99,11 @@ safe_mkdirs() {
 }
 
 check_protected_assets() {
-    log "Protected assets policy"
-    echo "  - FastPanel configs will NOT be modified"
-    echo "  - ArtistFlow will NOT be modified"
-    echo "  - widget.stackworks.ru will NOT be modified"
+    log "Split-server policy"
+    echo "  - This installer configures SWChat Core only"
+    echo "  - FastPanel server is not involved"
+    echo "  - ArtistFlow is not involved"
+    echo "  - widget.stackworks.ru is not involved"
 }
 
 check_requirements() {
@@ -167,7 +168,7 @@ patch_synapse_config() {
         return
     fi
 
-    log "Patching Synapse config for PostgreSQL and reverse proxy"
+    log "Patching Synapse config for PostgreSQL and public base URL"
     cp "$DATA_DIR/synapse/homeserver.yaml" "$BACKUP_DIR/homeserver.yaml.$(date +%F_%H-%M-%S).bak"
 
     cat >> "$DATA_DIR/synapse/homeserver.yaml" <<'EOF'
@@ -183,7 +184,7 @@ database:
     cp_min: 5
     cp_max: 10
 
-# SWChat reverse proxy mode
+# SWChat public endpoint
 public_baseurl: https://__SERVER_NAME__/
 trusted_key_servers:
   - server_name: matrix.org
@@ -209,15 +210,16 @@ show_next_steps() {
     echo
     echo "== Installation complete =="
     echo
+    echo "SWChat Core installed on this server"
     echo "Matrix local endpoint: http://127.0.0.1:8008"
-    echo "Server name: $SERVER_NAME"
+    echo "Public Matrix server name: $SERVER_NAME"
     echo "Install dir: $INSTALL_DIR"
     echo
-    echo "FastPanel was NOT modified. Configure reverse proxy manually when ready:"
-    echo "  https://$SERVER_NAME -> http://127.0.0.1:8008"
-    echo
-    echo "Healthcheck:"
+    echo "Next checks:"
     echo "  sudo bash $SOURCE_DIR/scripts/healthcheck.sh"
+    echo "  curl http://127.0.0.1:8008/_matrix/client/versions"
+    echo
+    echo "Next infrastructure step: point DNS $SERVER_NAME to this Core server IP and configure public HTTPS endpoint."
     echo
 }
 
