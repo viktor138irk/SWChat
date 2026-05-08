@@ -12,19 +12,11 @@ COMPOSE_FILE="${COMPOSE_FILE:-$SOURCE_DIR/docker-compose.yml}"
 SERVER_NAME="${SERVER_NAME:-matrix.stackworks.ru}"
 REPORT_STATS="${REPORT_STATS:-no}"
 AUTO_START="${AUTO_START:-yes}"
+AUTO_INSTALL_DOCKER="${AUTO_INSTALL_DOCKER:-yes}"
 
-log() {
-    echo "[INFO] $*"
-}
-
-warn() {
-    echo "[WARN] $*"
-}
-
-fail() {
-    echo "[ERROR] $*" >&2
-    exit 1
-}
+log() { echo "[INFO] $*"; }
+warn() { echo "[WARN] $*"; }
+fail() { echo "[ERROR] $*" >&2; exit 1; }
 
 need_root() {
     if [ "$(id -u)" -ne 0 ]; then
@@ -44,6 +36,62 @@ random_secret() {
     fi
 }
 
+detect_os() {
+    [ -f /etc/os-release ] || fail "Cannot detect OS: /etc/os-release not found"
+    . /etc/os-release
+    OS_ID="${ID:-}"
+    OS_CODENAME="${VERSION_CODENAME:-}"
+
+    case "$OS_ID" in
+        ubuntu|debian) ;;
+        *) fail "Unsupported OS for automatic Docker install: $OS_ID. Install Docker manually or use Ubuntu/Debian." ;;
+    esac
+
+    [ -n "$OS_CODENAME" ] || fail "Cannot detect OS codename"
+}
+
+install_docker() {
+    if command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
+        log "Docker and Docker Compose plugin already installed"
+        return
+    fi
+
+    if [ "$AUTO_INSTALL_DOCKER" != "yes" ]; then
+        fail "Docker is not installed and AUTO_INSTALL_DOCKER is not yes"
+    fi
+
+    detect_os
+    log "Installing Docker Engine and Docker Compose plugin for $OS_ID $OS_CODENAME"
+
+    apt-get update
+    apt-get install -y ca-certificates curl gnupg lsb-release
+
+    install -m 0755 -d /etc/apt/keyrings
+
+    if [ ! -f /etc/apt/keyrings/docker.gpg ]; then
+        curl -fsSL "https://download.docker.com/linux/$OS_ID/gpg" | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+        chmod a+r /etc/apt/keyrings/docker.gpg
+    else
+        warn "Docker GPG key already exists, keeping it"
+    fi
+
+    DOCKER_LIST="/etc/apt/sources.list.d/docker.list"
+    if [ ! -f "$DOCKER_LIST" ]; then
+        echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/$OS_ID $OS_CODENAME stable" > "$DOCKER_LIST"
+    else
+        warn "Docker apt source already exists, keeping it"
+    fi
+
+    apt-get update
+    apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+
+    systemctl enable docker >/dev/null 2>&1 || true
+    systemctl start docker >/dev/null 2>&1 || true
+
+    command -v docker >/dev/null 2>&1 || fail "Docker installation failed"
+    docker compose version >/dev/null 2>&1 || fail "Docker Compose plugin installation failed"
+}
+
 safe_mkdirs() {
     log "Creating project directories"
     mkdir -p "$INSTALL_DIR" "$SOURCE_DIR" "$DATA_DIR" "$BACKUP_DIR"
@@ -59,6 +107,7 @@ check_protected_assets() {
 
 check_requirements() {
     log "Checking requirements"
+    install_docker
     need_command docker
     docker compose version >/dev/null 2>&1 || fail "Docker Compose plugin is required"
     need_command sed
@@ -113,8 +162,12 @@ generate_synapse_config() {
 }
 
 patch_synapse_config() {
-    log "Patching Synapse config for PostgreSQL and reverse proxy"
+    if grep -q "SWChat managed PostgreSQL database config" "$DATA_DIR/synapse/homeserver.yaml" 2>/dev/null; then
+        warn "Synapse config already patched, skipping"
+        return
+    fi
 
+    log "Patching Synapse config for PostgreSQL and reverse proxy"
     cp "$DATA_DIR/synapse/homeserver.yaml" "$BACKUP_DIR/homeserver.yaml.$(date +%F_%H-%M-%S).bak"
 
     cat >> "$DATA_DIR/synapse/homeserver.yaml" <<'EOF'
