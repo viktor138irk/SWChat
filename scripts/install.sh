@@ -2,8 +2,8 @@
 
 set -Eeuo pipefail
 
-PROJECT_NAME="WSMessenger"
-INSTALL_DIR="${INSTALL_DIR:-/opt/swmessenger}"
+PROJECT_NAME="SWChat"
+INSTALL_DIR="${INSTALL_DIR:-/opt/swchat}"
 SOURCE_DIR="${SOURCE_DIR:-$INSTALL_DIR/source}"
 DATA_DIR="${DATA_DIR:-$INSTALL_DIR/data}"
 BACKUP_DIR="${BACKUP_DIR:-$INSTALL_DIR/backups}"
@@ -117,10 +117,9 @@ patch_synapse_config() {
 
     cp "$DATA_DIR/synapse/homeserver.yaml" "$BACKUP_DIR/homeserver.yaml.$(date +%F_%H-%M-%S).bak"
 
-    # Disable default SQLite database block by appending explicit PostgreSQL config at the end.
     cat >> "$DATA_DIR/synapse/homeserver.yaml" <<'EOF'
 
-# WSMessenger managed PostgreSQL database config
+# SWChat managed PostgreSQL database config
 database:
   name: psycopg2
   args:
@@ -131,7 +130,7 @@ database:
     cp_min: 5
     cp_max: 10
 
-# WSMessenger reverse proxy mode
+# SWChat reverse proxy mode
 public_baseurl: https://__SERVER_NAME__/
 trusted_key_servers:
   - server_name: matrix.org
@@ -148,7 +147,7 @@ start_stack() {
         return
     fi
 
-    log "Starting WSMessenger containers"
+    log "Starting SWChat containers"
     cd "$SOURCE_DIR"
     docker compose --env-file "$ENV_FILE" up -d
 }
@@ -159,6 +158,7 @@ show_next_steps() {
     echo
     echo "Matrix local endpoint: http://127.0.0.1:8008"
     echo "Server name: $SERVER_NAME"
+    echo "Install dir: $INSTALL_DIR"
     echo
     echo "FastPanel was NOT modified. Configure reverse proxy manually when ready:"
     echo "  https://$SERVER_NAME -> http://127.0.0.1:8008"
