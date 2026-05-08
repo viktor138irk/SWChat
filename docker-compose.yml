@@ -1,0 +1,35 @@
+version: '3.9'
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: swmessenger-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: synapse
+      POSTGRES_USER: synapse
+      POSTGRES_PASSWORD: swmessenger_password
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+    networks:
+      - swmessenger
+
+  synapse:
+    image: matrixdotorg/synapse:latest
+    container_name: swmessenger-synapse
+    restart: unless-stopped
+    depends_on:
+      - postgres
+    environment:
+      SYNAPSE_SERVER_NAME: matrix.example.ru
+      SYNAPSE_REPORT_STATS: 'no'
+    volumes:
+      - ./data/synapse:/data
+    ports:
+      - '127.0.0.1:8008:8008'
+    networks:
+      - swmessenger
+
+networks:
+  swmessenger:
+    driver: bridge
