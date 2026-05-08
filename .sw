@@ -300,10 +300,15 @@ FastPanel/Nginx сам разрулит поддомены по vhost/server_nam
 - Проверено с FastPanel proxy: curl http://192.168.0.141:8008/_matrix/client/versions успешно вернул JSON Matrix API.
 - Зафиксировано: связка FastPanel proxy → Matrix/Core по локальной сети работает.
 - Зафиксировано: если stackworks.ru и wildcard-поддомены уже направлены на FastPanel, matrix.stackworks.ru можно разрулить созданием отдельного сайта/vhost в FastPanel без отдельной DNS-записи.
+- Проверено: https://matrix.stackworks.ru/_matrix/client/versions через FastPanel reverse proxy успешно вернул Matrix API JSON.
+- Зафиксировано: публичный HTTPS endpoint Matrix через FastPanel работает.
 
 ## Текущий этап установки
 
 SWChat Core локально работает на новом отдельном сервере.
+
+Публичный HTTPS endpoint через FastPanel reverse proxy работает:
+- https://matrix.stackworks.ru/_matrix/client/versions возвращает Matrix API JSON.
 
 Текущий выбранный этап:
 - отдельный FastPanel reverse proxy сервер с private IP 192.168.0.221;
@@ -311,21 +316,13 @@ SWChat Core локально работает на новом отдельном
 - приватная сеть между FastPanel и Core;
 - Matrix Synapse на Core с private IP 192.168.0.141;
 - локальный доступ FastPanel → Core:8008 подтверждён;
-- поддомены могут маршрутизироваться через FastPanel vhost, если wildcard DNS уже ведёт на FastPanel.
-
-После настройки FastPanel ожидается:
-- HTTPS endpoint на https://matrix.stackworks.ru;
-- успешный Matrix login через официальный Element.
+- публичный доступ Internet → FastPanel → Core подтверждён.
 
 ## Следующий шаг
 
 Следующий этап:
-- проверить, что matrix.stackworks.ru действительно резолвится в публичный IP FastPanel proxy сервера;
-- в FastPanel создать отдельный сайт matrix.stackworks.ru;
-- выпустить SSL в FastPanel для matrix.stackworks.ru;
-- в FastPanel настроить proxy_pass http://192.168.0.141:8008;
 - закрыть прямой доступ к Core:8008 из интернета и разрешить только 192.168.0.221;
-- проверить HTTPS endpoint через браузер и curl;
 - создать первого пользователя Matrix;
-- проверить вход через официальный Element/Matrix клиент;
+- проверить вход через официальный Element/Matrix клиент на homeserver https://matrix.stackworks.ru;
+- проверить создание комнаты, отправку сообщений и файлов;
 - только после этого готовить frontend и свой Android/Web-клиент.
