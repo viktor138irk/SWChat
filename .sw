@@ -323,6 +323,14 @@ FastPanel proxy сервер и SWChat Core объединены в локаль
 - Авторизация в приложении SWChat-App/FluffyChat через homeserver https://matrix.stackworks.ru успешно прошла.
 - Принят Android package/applicationId: ru.stackworks.swchat.
 - Принято требование: регистрация прямо из приложения и поиск людей без необходимости вводить Matrix-домен.
+- Начат первичный Android-ребрендинг SWChat-App.
+- build.gradle.kts переведён с chat.fluffy.fluffychat на ru.stackworks.swchat.
+- Android namespace изменён на ru.stackworks.swchat.
+- Создан новый MainActivity.kt в пакете ru.stackworks.swchat.
+- AndroidManifest.xml обновлён: приложение переименовано в SWChat.
+- Deep link scheme изменён с im.fluffychat на swchat.
+- Auth callback scheme изменён с im.fluffychat.auth на swchat.auth.
+- Зафиксировано: следующий этап — полная миграция kotlin/java package tree и ребрендинг Flutter onboarding/UI.
 
 ## Текущий этап установки
 
@@ -335,11 +343,15 @@ SWChat Core локально работает на новом отдельном
 
 SWChat-App успешно запускается на Android и авторизуется на нашем Matrix homeserver.
 
+Начат ребрендинг Android-клиента SWChat.
+
 ## Следующий шаг
 
 Следующий этап:
-- начать первичный ребрендинг SWChat-App: название SWChat, package id ru.stackworks.swchat, default homeserver matrix.stackworks.ru, логотипы;
-- убрать matrix.org/default FluffyChat wording из onboarding;
+- завершить миграцию kotlin/java package tree на ru.stackworks.swchat;
+- убрать FluffyChat branding из Flutter onboarding и настроек;
+- внедрить default homeserver matrix.stackworks.ru;
+- подготовить собственные логотипы/splash/icon pack;
 - заложить регистрацию из приложения через SWChat backend или controlled Synapse registration;
 - заложить поиск людей по нику/имени/телефону без ручного ввода Matrix user_id;
 - зафиксировать Telegram-like UX направление в клиенте;
