@@ -29,6 +29,25 @@ services:
     networks:
       - swchat
 
+  caddy:
+    image: caddy:2-alpine
+    container_name: swchat-caddy
+    restart: unless-stopped
+    depends_on:
+      - synapse
+    environment:
+      SERVER_NAME: ${SERVER_NAME:-matrix.stackworks.ru}
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - ./deploy/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - /opt/swchat/data/caddy/data:/data
+      - /opt/swchat/data/caddy/config:/config
+      - /opt/swchat/logs/caddy:/var/log/caddy
+    networks:
+      - swchat
+
 networks:
   swchat:
     driver: bridge
