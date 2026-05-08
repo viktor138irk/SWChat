@@ -1,0 +1,10 @@
+{$SERVER_NAME} {
+    encode gzip zstd
+
+    log {
+        output file /var/log/caddy/swchat-access.log
+        format console
+    }
+
+    reverse_proxy synapse:8008
+}
