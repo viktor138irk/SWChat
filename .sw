@@ -304,6 +304,8 @@ FastPanel/Nginx сам разрулит поддомены по vhost/server_nam
 - Зафиксировано: публичный HTTPS endpoint Matrix через FastPanel работает.
 - При создании первого пользователя поймана ошибка UnicodeEncodeError из-за битого/кириллического символа в localpart имени пользователя.
 - Зафиксировано: первого администратора Matrix создавать только латиницей и цифрами, например admin или stackworks_admin.
+- Проверено: registration_shared_secret присутствует в /opt/swchat/data/synapse/homeserver.yaml.
+- Зафиксировано: bootstrap-регистрация администратора через register_new_matrix_user разрешена.
 
 ## Текущий этап установки
 
@@ -318,13 +320,15 @@ SWChat Core локально работает на новом отдельном
 - приватная сеть между FastPanel и Core;
 - Matrix Synapse на Core с private IP 192.168.0.141;
 - локальный доступ FastPanel → Core:8008 подтверждён;
-- публичный доступ Internet → FastPanel → Core подтверждён.
+- публичный доступ Internet → FastPanel → Core подтверждён;
+- registration_shared_secret найден.
 
 ## Следующий шаг
 
 Следующий этап:
-- повторить создание первого пользователя Matrix с ASCII localpart: admin или stackworks_admin;
+- создать первого пользователя Matrix командой register_new_matrix_user с ASCII localpart: admin или stackworks_admin;
+- если пользователь уже создан, проверить логин через Element по homeserver https://matrix.stackworks.ru;
 - закрыть прямой доступ к Core:8008 из интернета и разрешить только 192.168.0.221;
-- проверить вход через официальный Element/Matrix клиент на homeserver https://matrix.stackworks.ru;
+- проверить вход через официальный Element/Matrix клиент;
 - проверить создание комнаты, отправку сообщений и файлов;
 - только после этого готовить frontend и свой Android/Web-клиент.
