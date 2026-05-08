@@ -1,29 +1,185 @@
 #!/usr/bin/env bash
 
-set -e
+set -Eeuo pipefail
 
-echo "== WSMessenger Installer =="
+PROJECT_NAME="WSMessenger"
+INSTALL_DIR="${INSTALL_DIR:-/opt/swmessenger}"
+SOURCE_DIR="${SOURCE_DIR:-$INSTALL_DIR/source}"
+DATA_DIR="${DATA_DIR:-$INSTALL_DIR/data}"
+BACKUP_DIR="${BACKUP_DIR:-$INSTALL_DIR/backups}"
+ENV_FILE="${ENV_FILE:-$INSTALL_DIR/.env}"
+COMPOSE_FILE="${COMPOSE_FILE:-$SOURCE_DIR/docker-compose.yml}"
+SERVER_NAME="${SERVER_NAME:-matrix.stackworks.ru}"
+REPORT_STATS="${REPORT_STATS:-no}"
+AUTO_START="${AUTO_START:-yes}"
 
-echo "[1/5] Creating directories"
-mkdir -p /opt/swmessenger
-mkdir -p /opt/swmessenger/backups
-mkdir -p /opt/swmessenger/source
+log() {
+    echo "[INFO] $*"
+}
 
-echo "[2/5] Checking Docker"
-if ! command -v docker >/dev/null 2>&1; then
-    echo "Docker not installed"
+warn() {
+    echo "[WARN] $*"
+}
+
+fail() {
+    echo "[ERROR] $*" >&2
     exit 1
-fi
+}
 
-echo "[3/5] Checking Docker Compose"
-docker compose version >/dev/null
+need_root() {
+    if [ "$(id -u)" -ne 0 ]; then
+        fail "Run as root: sudo bash scripts/install.sh"
+    fi
+}
 
-echo "[4/5] Starting containers"
-docker compose up -d
+need_command() {
+    command -v "$1" >/dev/null 2>&1 || fail "Required command not found: $1"
+}
 
-echo "[5/5] Done"
+random_secret() {
+    if command -v openssl >/dev/null 2>&1; then
+        openssl rand -hex 32
+    else
+        tr -dc 'a-f0-9' </dev/urandom | head -c 64
+    fi
+}
 
-echo
+safe_mkdirs() {
+    log "Creating project directories"
+    mkdir -p "$INSTALL_DIR" "$SOURCE_DIR" "$DATA_DIR" "$BACKUP_DIR"
+    mkdir -p "$DATA_DIR/postgres" "$DATA_DIR/synapse" "$DATA_DIR/coturn"
+}
 
-echo "WSMessenger base stack installed"
-echo "IMPORTANT: FastPanel configs were NOT modified"
+check_protected_assets() {
+    log "Protected assets policy"
+    echo "  - FastPanel configs will NOT be modified"
+    echo "  - ArtistFlow will NOT be modified"
+    echo "  - widget.stackworks.ru will NOT be modified"
+}
+
+check_requirements() {
+    log "Checking requirements"
+    need_command docker
+    docker compose version >/dev/null 2>&1 || fail "Docker Compose plugin is required"
+    need_command sed
+    need_command grep
+    need_command ss
+}
+
+write_env() {
+    if [ -f "$ENV_FILE" ]; then
+        warn ".env already exists, keeping it: $ENV_FILE"
+        return
+    fi
+
+    log "Creating .env"
+    POSTGRES_PASSWORD="$(random_secret)"
+    REGISTRATION_SHARED_SECRET="$(random_secret)"
+    MACAROON_SECRET_KEY="$(random_secret)"
+    FORM_SECRET="$(random_secret)"
+
+    cat > "$ENV_FILE" <<EOF
+SERVER_NAME=$SERVER_NAME
+REPORT_STATS=$REPORT_STATS
+POSTGRES_DB=synapse
+POSTGRES_USER=synapse
+POSTGRES_PASSWORD=$POSTGRES_PASSWORD
+REGISTRATION_SHARED_SECRET=$REGISTRATION_SHARED_SECRET
+MACAROON_SECRET_KEY=$MACAROON_SECRET_KEY
+FORM_SECRET=$FORM_SECRET
+EOF
+
+    chmod 600 "$ENV_FILE"
+}
+
+ensure_compose_file() {
+    [ -f "$COMPOSE_FILE" ] || fail "docker-compose.yml not found: $COMPOSE_FILE"
+}
+
+generate_synapse_config() {
+    if [ -f "$DATA_DIR/synapse/homeserver.yaml" ]; then
+        warn "Synapse config already exists, keeping it"
+        return
+    fi
+
+    log "Generating Synapse config for $SERVER_NAME"
+    docker run --rm \
+        -v "$DATA_DIR/synapse:/data" \
+        -e SYNAPSE_SERVER_NAME="$SERVER_NAME" \
+        -e SYNAPSE_REPORT_STATS="$REPORT_STATS" \
+        matrixdotorg/synapse:latest generate
+
+    [ -f "$DATA_DIR/synapse/homeserver.yaml" ] || fail "Synapse config was not generated"
+}
+
+patch_synapse_config() {
+    log "Patching Synapse config for PostgreSQL and reverse proxy"
+
+    cp "$DATA_DIR/synapse/homeserver.yaml" "$BACKUP_DIR/homeserver.yaml.$(date +%F_%H-%M-%S).bak"
+
+    # Disable default SQLite database block by appending explicit PostgreSQL config at the end.
+    cat >> "$DATA_DIR/synapse/homeserver.yaml" <<'EOF'
+
+# WSMessenger managed PostgreSQL database config
+database:
+  name: psycopg2
+  args:
+    user: synapse
+    password: __POSTGRES_PASSWORD__
+    database: synapse
+    host: postgres
+    cp_min: 5
+    cp_max: 10
+
+# WSMessenger reverse proxy mode
+public_baseurl: https://__SERVER_NAME__/
+trusted_key_servers:
+  - server_name: matrix.org
+EOF
+
+    . "$ENV_FILE"
+    sed -i "s|__POSTGRES_PASSWORD__|$POSTGRES_PASSWORD|g" "$DATA_DIR/synapse/homeserver.yaml"
+    sed -i "s|__SERVER_NAME__|$SERVER_NAME|g" "$DATA_DIR/synapse/homeserver.yaml"
+}
+
+start_stack() {
+    if [ "$AUTO_START" != "yes" ]; then
+        warn "AUTO_START is not yes, skipping docker compose up"
+        return
+    fi
+
+    log "Starting WSMessenger containers"
+    cd "$SOURCE_DIR"
+    docker compose --env-file "$ENV_FILE" up -d
+}
+
+show_next_steps() {
+    echo
+    echo "== Installation complete =="
+    echo
+    echo "Matrix local endpoint: http://127.0.0.1:8008"
+    echo "Server name: $SERVER_NAME"
+    echo
+    echo "FastPanel was NOT modified. Configure reverse proxy manually when ready:"
+    echo "  https://$SERVER_NAME -> http://127.0.0.1:8008"
+    echo
+    echo "Healthcheck:"
+    echo "  sudo bash $SOURCE_DIR/scripts/healthcheck.sh"
+    echo
+}
+
+main() {
+    echo "== $PROJECT_NAME Auto Installer =="
+    need_root
+    check_protected_assets
+    safe_mkdirs
+    check_requirements
+    ensure_compose_file
+    write_env
+    generate_synapse_config
+    patch_synapse_config
+    start_stack
+    show_next_steps
+}
+
+main "$@"
