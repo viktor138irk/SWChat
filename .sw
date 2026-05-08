@@ -1,7 +1,7 @@
 # SWChat — журнал проекта
 
 Дата старта: 2026-05-08
-Репозиторий: https://github.com/viktor138irk/WSMessenger
+Репозиторий: https://github.com/viktor138irk/SWChat
 Рабочее имя продукта: SWChat
 Проект: собственный мессенджер Android/Web на базе Matrix-сервера.
 
@@ -13,6 +13,16 @@
 - ArtistFlow / artistflow.ru;
 - основной виджет StackWorks / https://widget.stackworks.ru/;
 - текущие сайты и домены FastPanel.
+
+## Текущая архитектура установки
+
+Принято решение ставить SWChat Core на отдельный новый сервер.
+
+Старый сервер с FastPanel используется только для будущего frontend/web-клиента, без размещения Matrix/PostgreSQL/TURN.
+
+Разделение:
+- новый сервер: Matrix Synapse, PostgreSQL, TURN/STUN, backend, media storage, backups;
+- старый FastPanel сервер: frontend/web-client/витрина, без автоматических изменений FastPanel.
 
 ## Жёсткое правило про FastPanel
 
@@ -55,12 +65,6 @@
 
 В новом диалоге продолжение проекта начинается с чтения .sw.
 
-## Важно про имя проекта
-
-Пользовательское имя продукта: SWChat.
-
-Репозиторий пока остаётся viktor138irk/WSMessenger, но в интерфейсах, документации, установщике и дальнейшем планировании использовать название SWChat.
-
 ## Важно про widget.stackworks.ru
 
 widget.stackworks.ru — отдельный действующий production-проект StackWorks.
@@ -87,62 +91,53 @@ ArtistFlow должен оставаться нетронутым:
 
 ## Принятая архитектура SWChat
 
-SWChat разворачивается отдельно от FastPanel-сайтов, ArtistFlow и widget.stackworks.ru.
+SWChat Core разворачивается на отдельном сервере.
 
 Базовая схема:
-- FastPanel/Nginx — reverse proxy и SSL-витрина, но изменения только вручную пользователем или по отдельной явной команде;
 - Matrix Synapse — отдельный сервис на 127.0.0.1:8008;
 - PostgreSQL — отдельная база для Matrix/SWChat;
 - backend/админка SWChat — отдельный локальный сервис;
-- web-client — отдельный web-клиент мессенджера;
+- web-client — на старом FastPanel-сервере в будущем;
 - Android-приложение — отдельный клиент Matrix, позже брендированный под SWChat/StackWorks.
 
 ## Домены проекта
 
 Рекомендуемая безопасная схема:
-- matrix.stackworks.ru — Matrix API / Synapse;
-- chat.stackworks.ru или messenger.stackworks.ru — web-клиент;
-- admin-messenger.stackworks.ru — админ-панель;
-- turn.stackworks.ru — TURN/STUN для звонков, если потребуется;
+- matrix.stackworks.ru — Matrix API / Synapse, новый SWChat Core сервер;
+- turn.stackworks.ru — TURN/STUN, новый SWChat Core сервер;
+- api-chat.stackworks.ru — backend API, новый SWChat Core сервер, если понадобится;
+- chat.stackworks.ru или messenger.stackworks.ru — web-клиент на старом FastPanel-сервере;
 - widget.stackworks.ru — отдельный production-виджет StackWorks, не часть Matrix/SWChat на текущем этапе.
 
-## Предварительные директории
+## Предварительные директории Core-сервера
 
 - /opt/swchat/source — исходники GitHub;
 - /opt/swchat/app — backend/админка;
 - /opt/swchat/matrix — Matrix/Synapse;
-- /opt/swchat/element — web-клиент, если используем Element/Web;
+- /opt/swchat/data — данные контейнеров;
 - /opt/swchat/backups — резервные копии;
-- /var/www/swchat/public — webroot для фронта, если нужен.
+- /opt/swchat/logs — логи.
 
-Запрещено автоматически использовать webroot widget.stackworks.ru.
+## Что понадобится на новом Core-сервере
 
-## Что понадобится
-
-Сервер:
-- Ubuntu;
-- FastPanel уже может быть установлен;
-- Docker Compose или systemd-сервисы;
-- PostgreSQL;
-- Matrix Synapse;
-- coturn для звонков;
-- Nginx/FastPanel reverse proxy;
-- SSL Let’s Encrypt.
-
-Клиенты:
-- Android-клиент на базе Matrix SDK / форка Element;
-- web-клиент, желательно сначала Element Web или собственный лёгкий клиент.
+- Ubuntu 24.04 или Ubuntu 22.04;
+- root-доступ;
+- Docker Engine;
+- Docker Compose plugin;
+- PostgreSQL в контейнере;
+- Matrix Synapse в контейнере;
+- coturn позже;
+- отдельные DNS-записи на IP нового сервера.
 
 ## MVP проекта
 
 Первая рабочая цель:
 1. Подготовить базовый репозиторий.
-2. Добавить installer/config wizard.
-3. Поднять Matrix Synapse локально.
-4. Добавить FastPanel proxy-инструкции без автоматического применения.
-5. Добавить healthcheck.
-6. Добавить backup перед изменениями.
-7. Подготовить Android-план.
+2. Поднять Matrix Synapse на отдельном Core-сервере.
+3. Подключить PostgreSQL.
+4. Проверить локальный Matrix endpoint.
+5. Подготовить DNS/proxy инструкции без изменения FastPanel.
+6. Подготовить Android-план.
 
 Минимальные функции:
 - регистрация/вход;
@@ -150,7 +145,7 @@ SWChat разворачивается отдельно от FastPanel-сайто
 - групповые комнаты;
 - отправка файлов/изображений;
 - операторы/админы;
-- безопасная установка рядом с FastPanel;
+- безопасная установка рядом с production, но на отдельном сервере;
 - журнал состояния проекта в этом файле .sw.
 
 ## Правила ведения проекта
@@ -169,28 +164,46 @@ SWChat разворачивается отдельно от FastPanel-сайто
 ## Текущий статус
 
 2026-05-08:
-- Репозиторий viktor138irk/WSMessenger подключён.
-- Репозиторий был пустой.
-- Создан первый файл .sw.
+- Репозиторий переименован в viktor138irk/SWChat.
+- Создан файл .sw.
 - Созданы VERSION, README.md и базовый docker-compose.yml.
 - Созданы docs/ARCHITECTURE.md и docs/FASTPANEL_PROXY.md.
 - Созданы scripts/healthcheck.sh и scripts/install.sh.
 - Подготовлен автоустановщик.
 - Зафиксировано пользовательское имя продукта: SWChat.
+- Принято решение ставить SWChat Core на отдельный сервер.
+- Старый FastPanel-сервер использовать только для frontend/web-client в будущем.
 - Зафиксировано, что widget.stackworks.ru — отдельный production-виджет StackWorks.
 - Зафиксировано, что widget.stackworks.ru пока никак не связывается с Matrix/SWChat.
 - Зафиксировано, что новый виджет SWChat не планируется.
 - Зафиксировано постоянное правило: файл .sw ведётся всегда и обновляется после каждого значимого шага.
 - Зафиксировано жёсткое правило: всё, что касается FastPanel, самостоятельно не трогать; только готовить инструкции и шаблоны до отдельной явной команды пользователя.
 
+## Текущий этап установки
+
+Запуск SWChat Core на новом отдельном сервере.
+
+Команда установки:
+
+```bash
+sudo mkdir -p /opt/swchat
+sudo git clone https://github.com/viktor138irk/SWChat.git /opt/swchat/source
+cd /opt/swchat/source
+sudo SERVER_NAME=matrix.stackworks.ru bash scripts/install.sh
+```
+
+После установки проверить:
+
+```bash
+sudo bash /opt/swchat/source/scripts/healthcheck.sh
+curl http://127.0.0.1:8008/_matrix/client/versions
+```
+
 ## Следующий шаг
 
-Следующий этап:
-- привести README, install.sh, healthcheck.sh и docs к имени SWChat;
-- .gitignore;
-- update system foundation;
-- auto backup scripts;
-- Matrix registration helper;
-- diagnostics;
-- web-client skeleton;
-- Android architecture draft.
+После получения вывода установки:
+- исправить ошибки installer при наличии;
+- проверить контейнеры;
+- проверить Matrix endpoint;
+- подготовить DNS для matrix.stackworks.ru на новый сервер;
+- только после этого готовить frontend на FastPanel-сервере.
