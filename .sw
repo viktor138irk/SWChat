@@ -149,6 +149,18 @@ FastPanel reverse proxy → SWChat Core.
 - прямой доступ к Core:8008 из интернета закрыт;
 - доступ к Core:8008 разрешён только с 192.168.0.221.
 
+## DNS и wildcard-поддомены
+
+Если домен stackworks.ru и все его поддомены уже направлены wildcard-записью на FastPanel-сервер, отдельную DNS A-запись для matrix.stackworks.ru можно не создавать.
+
+Достаточно:
+- убедиться, что *.stackworks.ru указывает на публичный IP FastPanel;
+- создать отдельный сайт matrix.stackworks.ru внутри FastPanel;
+- выпустить SSL для matrix.stackworks.ru;
+- настроить для этого сайта reverse proxy на http://192.168.0.141:8008.
+
+FastPanel/Nginx сам разрулит поддомены по vhost/server_name.
+
 ## Вариант с другим FastPanel-сервером
 
 Можно разместить публичные домены SWChat на другом нашем сервере с FastPanel, если этот сервер не является текущим production-сервером ArtistFlow/widget.stackworks.ru.
@@ -199,7 +211,7 @@ FastPanel reverse proxy → SWChat Core.
 - FastPanel reverse proxy на отдельном сервере;
 - приватная сеть/VPN между серверами;
 - coturn позже;
-- отдельные DNS-записи на proxy FastPanel сервер.
+- отдельные DNS-записи на proxy FastPanel сервер или wildcard-запись *.stackworks.ru на него.
 
 ## MVP проекта
 
@@ -287,6 +299,7 @@ FastPanel reverse proxy → SWChat Core.
 - Зафиксировано: доступ к Core:8008 разрешать только с 192.168.0.221.
 - Проверено с FastPanel proxy: curl http://192.168.0.141:8008/_matrix/client/versions успешно вернул JSON Matrix API.
 - Зафиксировано: связка FastPanel proxy → Matrix/Core по локальной сети работает.
+- Зафиксировано: если stackworks.ru и wildcard-поддомены уже направлены на FastPanel, matrix.stackworks.ru можно разрулить созданием отдельного сайта/vhost в FastPanel без отдельной DNS-записи.
 
 ## Текущий этап установки
 
@@ -297,17 +310,18 @@ SWChat Core локально работает на новом отдельном
 - публичный SSL через FastPanel;
 - приватная сеть между FastPanel и Core;
 - Matrix Synapse на Core с private IP 192.168.0.141;
-- локальный доступ FastPanel → Core:8008 подтверждён.
+- локальный доступ FastPanel → Core:8008 подтверждён;
+- поддомены могут маршрутизироваться через FastPanel vhost, если wildcard DNS уже ведёт на FastPanel.
 
-После настройки DNS ожидается:
+После настройки FastPanel ожидается:
 - HTTPS endpoint на https://matrix.stackworks.ru;
 - успешный Matrix login через официальный Element.
 
 ## Следующий шаг
 
 Следующий этап:
-- в FastPanel создать сайт matrix.stackworks.ru;
-- настроить DNS A-запись matrix.stackworks.ru на публичный IP FastPanel proxy сервера;
+- проверить, что matrix.stackworks.ru действительно резолвится в публичный IP FastPanel proxy сервера;
+- в FastPanel создать отдельный сайт matrix.stackworks.ru;
 - выпустить SSL в FastPanel для matrix.stackworks.ru;
 - в FastPanel настроить proxy_pass http://192.168.0.141:8008;
 - закрыть прямой доступ к Core:8008 из интернета и разрешить только 192.168.0.221;
