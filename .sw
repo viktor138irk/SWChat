@@ -127,7 +127,11 @@ FastPanel reverse proxy → SWChat Core.
 
 ## Приватная сеть между серверами
 
-Зафиксировано: FastPanel proxy сервер и SWChat Core можно объединить в приватную локальную сеть/VPN.
+Зафиксировано: FastPanel proxy сервер и SWChat Core объединены в локальную сеть.
+
+Текущие private IP:
+- FastPanel proxy: 192.168.0.221;
+- SWChat Matrix/Core: 192.168.0.141.
 
 Это предпочтительная production-схема.
 
@@ -140,9 +144,10 @@ FastPanel reverse proxy → SWChat Core.
 
 Рекомендованная схема:
 - FastPanel proxy имеет public IP;
-- Core-сервер использует private IP/VPN IP;
-- proxy_pass идёт на private IP Core-сервера;
-- прямой доступ к Core:8008 из интернета закрыт.
+- Core-сервер использует private IP 192.168.0.141;
+- proxy_pass идёт на http://192.168.0.141:8008;
+- прямой доступ к Core:8008 из интернета закрыт;
+- доступ к Core:8008 разрешён только с 192.168.0.221.
 
 ## Вариант с другим FastPanel-сервером
 
@@ -277,16 +282,19 @@ FastPanel reverse proxy → SWChat Core.
 - Зафиксировано: между FastPanel proxy и SWChat Core можно использовать приватную сеть/VPN.
 - Создан docs/PRIVATE_NETWORK_BETWEEN_SERVERS.md.
 - Зафиксировано: private network между серверами является предпочтительной production-схемой.
+- Уточнены реальные private IP: FastPanel proxy 192.168.0.221, Matrix/Core 192.168.0.141.
+- Зафиксировано: proxy_pass должен идти на http://192.168.0.141:8008.
+- Зафиксировано: доступ к Core:8008 разрешать только с 192.168.0.221.
 
 ## Текущий этап установки
 
 SWChat Core локально работает на новом отдельном сервере.
 
 Текущий выбранный этап:
-- отдельный FastPanel reverse proxy сервер;
+- отдельный FastPanel reverse proxy сервер с private IP 192.168.0.221;
 - публичный SSL через FastPanel;
-- приватная сеть/VPN между FastPanel и Core;
-- Matrix Synapse только на Core.
+- приватная сеть между FastPanel и Core;
+- Matrix Synapse на Core с private IP 192.168.0.141.
 
 После настройки DNS ожидается:
 - HTTPS endpoint на https://matrix.stackworks.ru;
@@ -295,11 +303,11 @@ SWChat Core локально работает на новом отдельном
 ## Следующий шаг
 
 Следующий этап:
-- объединить FastPanel proxy и Core в приватную сеть/VPN;
-- настроить private IP между серверами;
-- перевести proxy_pass на private IP Core;
-- закрыть прямой доступ к Core:8008 из интернета;
-- настроить DNS A-записи matrix.stackworks.ru и chat.stackworks.ru на FastPanel proxy сервер;
+- на Core изменить публикацию Synapse с 127.0.0.1:8008 на 192.168.0.141:8008 или 0.0.0.0:8008 со строгим firewall;
+- с FastPanel проверить curl http://192.168.0.141:8008/_matrix/client/versions;
+- в FastPanel настроить proxy_pass http://192.168.0.141:8008;
+- закрыть прямой доступ к Core:8008 из интернета и разрешить только 192.168.0.221;
+- настроить DNS A-записи matrix.stackworks.ru и chat.stackworks.ru на публичный IP FastPanel proxy сервера;
 - выпустить SSL в FastPanel для matrix.stackworks.ru;
 - проверить HTTPS endpoint через браузер и curl;
 - создать первого пользователя Matrix;
