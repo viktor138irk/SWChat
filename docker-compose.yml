@@ -25,7 +25,10 @@ services:
     volumes:
       - /opt/swchat/data/synapse:/data
     ports:
-      - '127.0.0.1:8008:8008'
+      # Default is localhost-only for single-server/local checks.
+      # For FastPanel reverse proxy over private LAN set MATRIX_BIND_HOST=192.168.0.141 in /opt/swchat/.env
+      # and restrict access with scripts/firewall_private_proxy.sh.
+      - '${MATRIX_BIND_HOST:-127.0.0.1}:8008:8008'
     networks:
       - swchat
 
