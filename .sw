@@ -1,12 +1,26 @@
-# Pulse — журнал проекта
+# SWChat Core — серверный журнал проекта
 
 Дата старта: 2026-05-08
+Дата обновления: 2026-05-09
 Репозиторий Core/backend/docs: https://github.com/viktor138irk/SWChat
-Репозиторий App/client: https://github.com/viktor138irk/SWChat-App
-Рабочее имя продукта: Pulse
-Прежнее рабочее имя: SWChat
+Репозиторий Android/client: https://github.com/viktor138irk/SWChat-App
+Публичное имя продукта: Pulse
+Техническое имя серверного проекта: SWChat Core
 Брендовая формула: Pulse by StackWorks
-Проект: собственный мессенджер Android/Web на базе Matrix-сервера.
+Проект: серверная часть собственного мессенджера Android/Web на базе Matrix/Synapse.
+
+---
+
+## Разделение журналов
+
+С 2026-05-09 разработка ведётся как единый комбайн Pulse/SWChat в одном рабочем чате, но журналы разделены по репозиториям.
+
+- `viktor138irk/SWChat/.sw` — только сервер, Core, Synapse, PostgreSQL, reverse proxy, firewall, домены, backend/API/admin.
+- `viktor138irk/SWChat-App/.sw` — Android/Flutter-клиент, FluffyChat, UI/UX Pulse, package/applicationId, APK, локализации, иконки, deep links.
+
+Правило: в серверный `.sw` не заносить клиентские детали SWChat-App/Pulse UI, кроме ссылок на клиентский репозиторий и общей схемы интеграции.
+
+---
 
 ## Главное правило проекта
 
@@ -42,9 +56,11 @@
 - готовить backup/firewall-скрипты;
 - описывать, что пользователь может сделать вручную в FastPanel.
 
+---
+
 ## Постоянное правило ведения .sw
 
-Файл `.sw` является главным журналом проекта и ведётся постоянно.
+Файл `.sw` является главным журналом соответствующего репозитория и ведётся постоянно.
 
 Обязательно записывать в `.sw`:
 - каждый значимый шаг разработки;
@@ -57,11 +73,14 @@
 - следующий шаг;
 - важные ошибки и выводы после исправлений.
 
-В новом диалоге продолжение проекта начинается с чтения `.sw`.
+В новом диалоге продолжение серверной части начинается с чтения `viktor138irk/SWChat/.sw`.
+Для Android-клиента начинать с чтения `viktor138irk/SWChat-App/.sw`.
+
+---
 
 ## Решение по названию
 
-2026-05-09 зафиксировано новое рабочее имя пользовательского продукта:
+2026-05-09 зафиксировано публичное имя продукта:
 
 ```text
 Pulse
@@ -73,81 +92,25 @@ Pulse
 Pulse by StackWorks
 ```
 
-Важно: репозитории пока остаются прежними:
-- Core/backend/docs: https://github.com/viktor138irk/SWChat
-- App/client: https://github.com/viktor138irk/SWChat-App
+Важно: технические репозитории остаются прежними:
+- Core/backend/docs: `viktor138irk/SWChat`;
+- Android/client: `viktor138irk/SWChat-App`.
 
-Технические имена пакетов не переименовывать без отдельного этапа миграции:
-- Dart package name в `pubspec.yaml` пока должен оставаться `fluffychat`, пока все импорты используют `package:fluffychat/...`;
-- Android applicationId пока: `ru.stackworks.swchat`;
-- Android namespace пока: `ru.stackworks.swchat`;
-- рабочий Android entrypoint может временно оставаться на legacy package, если это нужно для стабильного запуска.
+Серверные директории `/opt/swchat/*` пока не переименовывать без отдельного этапа server rename.
 
-## Карта ребрендинга
+---
 
-Места, которые надо учитывать при ребрендинге Pulse/SWChat/другого будущего имени:
-
-```text
-pubspec.yaml
-README.md
-lib/config/app_config.dart
-lib/config/setting_keys.dart
-lib/config/routes.dart
-lib/pages/intro/intro_page.dart
-lib/pages/intro/intro_page_presenter.dart
-lib/pages/login/login_view.dart
-lib/pages/sign_in/sign_in_page.dart
-lib/pages/chat_list/client_chooser_button.dart
-lib/utils/platform_infos.dart
-lib/utils/sign_in_flows/check_homeserver.dart
-android/app/build.gradle.kts
-android/app/src/main/AndroidManifest.xml
-android/app/src/main/kotlin/chat/fluffy/fluffychat/MainActivity.kt
-lib/l10n/intl_ru.arb
-lib/l10n/intl_en.arb
-assets/logo.png
-assets/info-logo.png
-assets/banner_transparent.png
-```
-
-Особо опасные места:
-
-```text
-pubspec.yaml name
-Dart package imports package:fluffychat/...
-Android applicationId
-Android namespace
-MainActivity package
-AndroidManifest activity name
-deep links
-auth callback scheme
-defaultHomeserver
-presetHomeserver
-applicationName
-pushNotificationsAppId
-pushNotificationsChannelId
-support/donation links
-About dialog legalese
-login routes
-add account routes
-```
-
-Правило ребрендинга:
-- сначала менять пользовательский UI/тексты/логотипы;
-- затем Android applicationId/namespace только с проверкой MainActivity;
-- Dart package name и массовые импорты менять только отдельным этапом автоматической миграции;
-- не менять `pubspec.yaml name` на новое имя, пока все импорты не переведены с `package:fluffychat/...`.
-
-## Принятая архитектура
+## Принятая серверная архитектура
 
 Core разворачивается на отдельном сервере.
 
 Базовая схема:
 - Matrix Synapse — отдельный сервис на приватном IP:8008;
 - PostgreSQL — отдельная база для Matrix/Pulse;
-- backend/админка Pulse — отдельный локальный сервис;
+- backend/API Pulse — отдельный локальный сервис в будущем;
+- админка Pulse — отдельный защищённый модуль поверх Synapse Admin API в будущем;
 - web-client — на FastPanel-сервере в будущем;
-- Android-приложение — отдельный клиент Matrix, позже брендированный под Pulse/StackWorks;
+- Android-приложение — отдельный клиент из репозитория `SWChat-App`;
 - FastPanel/Nginx reverse proxy — основной публичный HTTPS слой.
 
 Основная публичная схема:
@@ -162,20 +125,22 @@ Core разворачивается на отдельном сервере.
 FastPanel reverse proxy → Core
 ```
 
+---
+
 ## Приватная сеть между серверами
 
 FastPanel proxy сервер и Core объединены в локальную сеть.
 
 Текущие private IP:
-- FastPanel proxy: 192.168.0.221;
-- Matrix/Core: 192.168.0.141.
+- FastPanel proxy: `192.168.0.221`;
+- Matrix/Core: `192.168.0.141`.
 
 Рекомендованная схема:
 - FastPanel proxy имеет public IP;
-- Core-сервер использует private IP 192.168.0.141;
-- proxy_pass идёт на `http://192.168.0.141:8008`;
+- Core-сервер использует private IP `192.168.0.141`;
+- `proxy_pass` идёт на `http://192.168.0.141:8008`;
 - прямой доступ к Core:8008 из интернета закрыт;
-- доступ к Core:8008 разрешён только с 192.168.0.221.
+- доступ к Core:8008 разрешён только с `192.168.0.221`.
 
 В docker-compose с версии 0.1.2 порт Synapse настраивается через `.env`:
 
@@ -214,9 +179,11 @@ curl http://192.168.0.141:8008/_matrix/client/versions
 curl https://matrix.stackworks.ru/_matrix/client/versions
 ```
 
+---
+
 ## DNS и wildcard-поддомены
 
-Если домен stackworks.ru и все его поддомены уже направлены wildcard-записью на FastPanel-сервер, отдельную DNS A-запись для matrix.stackworks.ru можно не создавать.
+Если домен `stackworks.ru` и все его поддомены уже направлены wildcard-записью на FastPanel-сервер, отдельную DNS A-запись для `matrix.stackworks.ru` можно не создавать.
 
 Достаточно:
 - убедиться, что `*.stackworks.ru` указывает на публичный IP FastPanel;
@@ -224,88 +191,63 @@ curl https://matrix.stackworks.ru/_matrix/client/versions
 - выпустить SSL для `matrix.stackworks.ru`;
 - настроить для этого сайта reverse proxy на `http://192.168.0.141:8008`.
 
+---
+
 ## Домены проекта
 
 Рекомендуемая безопасная схема:
-- matrix.stackworks.ru — Matrix API / Synapse через FastPanel reverse proxy;
-- turn.stackworks.ru — TURN/STUN, новый Core сервер;
-- api-chat.stackworks.ru — backend API, новый Core сервер, если понадобится;
-- admin-chat.stackworks.ru — будущая Pulse Admin Panel;
-- chat.stackworks.ru или messenger.stackworks.ru — web-клиент на FastPanel-сервере;
-- widget.stackworks.ru — отдельный production-виджет StackWorks, не часть Matrix/Pulse на текущем этапе.
+- `matrix.stackworks.ru` — Matrix API / Synapse через FastPanel reverse proxy;
+- `turn.stackworks.ru` — TURN/STUN, новый Core сервер;
+- `api-chat.stackworks.ru` — backend API, новый Core сервер, если понадобится;
+- `admin-chat.stackworks.ru` — будущая Pulse Admin Panel;
+- `chat.stackworks.ru` или `messenger.stackworks.ru` — web-клиент на FastPanel-сервере;
+- `widget.stackworks.ru` — отдельный production-виджет StackWorks, не часть Matrix/Pulse на текущем этапе.
+
+---
 
 ## Предварительные директории Core-сервера
 
-- /opt/swchat/source — исходники GitHub;
-- /opt/swchat/app — backend/админка;
-- /opt/swchat/matrix — Matrix/Synapse;
-- /opt/swchat/data — данные контейнеров;
-- /opt/swchat/backups — резервные копии;
-- /opt/swchat/logs — логи.
+- `/opt/swchat/source` — исходники GitHub;
+- `/opt/swchat/app` — backend/API/админка;
+- `/opt/swchat/matrix` — Matrix/Synapse;
+- `/opt/swchat/data` — данные контейнеров;
+- `/opt/swchat/backups` — резервные копии;
+- `/opt/swchat/logs` — логи.
 
 До отдельного этапа server rename директории `/opt/swchat/*` не менять.
 
-## MVP проекта
+---
 
-Минимальные функции:
-- регистрация/вход;
+## MVP серверной части
+
+Минимальные серверные функции:
+- стабильный Matrix/Synapse homeserver;
+- PostgreSQL для Synapse;
+- публичный HTTPS endpoint через FastPanel reverse proxy;
+- закрытый прямой доступ к Core:8008 из интернета;
+- регистрация пользователей через controlled registration или будущий backend;
+- интеграция Android-клиента с `https://matrix.stackworks.ru`;
 - личные сообщения;
 - групповые чаты;
 - отправка файлов/изображений;
-- операторы/админы;
+- backend/API для профилей, поиска людей и регистрации;
 - админка управления пользователями;
-- регистрация из приложения;
-- поиск людей без ввода Matrix-домена;
-- Telegram-like интерфейс без показа Matrix-комнат;
-- безопасная установка рядом с production, но на отдельном сервере;
+- диагностика состояния Synapse/PostgreSQL/proxy;
 - журнал состояния проекта в этом файле `.sw`.
 
-## UX-решение собственного клиента
+---
 
-В собственном приложении Pulse комнатная структура Matrix должна быть скрыта от пользователя.
+## Регистрация и поиск людей — серверная схема
 
-Пользовательский интерфейс должен выглядеть как привычный Telegram-like мессенджер:
-- список чатов;
-- личные диалоги;
-- групповые чаты;
-- контакты;
-- поиск людей;
-- кнопка «Написать»;
-- привычные аватарки, статусы, индикаторы прочтения и вложения;
-- быстрый сайдбар/нижняя навигация;
-- закреплённые чаты;
-- архив;
-- поиск по сообщениям;
-- медиа/файлы внутри профиля чата.
+Пользовательский UX реализуется в клиенте, но сервер должен обеспечить нормальную механику:
 
-Правило UX:
-- основной ориентир интерфейса — Telegram;
-- не использовать слово «комната» в пользовательском интерфейсе Pulse;
-- использовать «чат», «диалог», «группа», «канал»;
-- Matrix room показывать как обычный чат;
-- создание direct room автоматизировать при первом сообщении контакту;
-- групповой room показывать как групповую беседу;
-- технические Matrix-настройки прятать в расширенные/админские разделы.
-
-## Регистрация и поиск людей
-
-В будущем клиенте Pulse регистрация должна быть доступна прямо из приложения.
-
-Пользовательский UX:
-- регистрация через приложение без консольных команд;
-- обычный логин/ник, без ручного ввода домена;
-- приложение само формирует Matrix user_id вида `@username:matrix.stackworks.ru`;
-- поиск людей по нику, имени, телефону или внутреннему Pulse ID;
-- пользователь не должен вводить `@user:matrix.stackworks.ru` вручную;
-- кнопка «Написать» должна автоматически создавать direct room;
-- контакты и поиск должны выглядеть как в обычном Telegram-like мессенджере.
-
-Техническая схема:
-- включить controlled registration или сделать регистрацию через отдельный Pulse backend;
 - backend создаёт Matrix-пользователя через Synapse Admin/Register API;
 - backend хранит публичный профиль Pulse: display_name, username, phone/email optional, avatar, статус;
 - поиск людей лучше делать через свой backend/index, а не напрямую через сырой Matrix room/user lookup;
-- Matrix user_id и домен остаются внутренней технической деталью.
+- Matrix user_id и домен остаются внутренней технической деталью;
+- direct room создаётся автоматически клиентом/серверной логикой при первом сообщении контакту.
+
+---
 
 ## Админка Pulse
 
@@ -325,10 +267,12 @@ curl https://matrix.stackworks.ru/_matrix/client/versions
 - управление TURN/STUN после добавления звонков;
 - диагностика состояния Synapse/PostgreSQL/proxy.
 
-## Стратегия тестирования
+---
+
+## Стратегия тестирования Core
 
 Сначала Core тестируется через официальные Matrix-клиенты.
-Собственный клиент не писать, пока не подтверждено, что серверная часть работает стабильно через официальные клиенты.
+Собственный клиент развивается отдельно в `SWChat-App`, но сервер должен оставаться проверяемым через стандартные Matrix endpoint.
 
 Проверять:
 - регистрацию/логин;
@@ -337,29 +281,15 @@ curl https://matrix.stackworks.ru/_matrix/client/versions
 - отправку файлов;
 - стабильность Synapse;
 - работу публичного домена;
-- Android-клиент на реальном телефоне.
+- доступность `/_matrix/client/versions`;
+- firewall-ограничение прямого доступа к 8008;
+- совместимость с Android-клиентом Pulse.
 
-## Клиентские репозитории
+---
 
-Клиентское приложение вынесено отдельно от Core:
-- Core/backend/docs: https://github.com/viktor138irk/SWChat
-- App/client: https://github.com/viktor138irk/SWChat-App
+## Правила ведения серверного проекта
 
-SWChat-App создан как отдельный репозиторий для Flutter/FluffyChat клиента.
-FluffyChat импортирован в SWChat-App.
-Найден pubspec.yaml upstream FluffyChat: name `fluffychat`, version `2.6.0+3553`, Flutter/Dart SDK `>=3.11.1 <4.0.0`.
-
-Принятое текущее Android package/applicationId:
-
-```text
-ru.stackworks.swchat
-```
-
-До отдельного package migration не менять на Pulse автоматически, чтобы не сломать сборку и запуск.
-
-## Правила ведения проекта
-
-1. Каждый заметный шаг записывать в этот файл `.sw`.
+1. Каждый заметный серверный шаг записывать в этот файл `.sw`.
 2. Новые версии фиксировать в `VERSION` и changelog/журнале.
 3. Не плодить мусорные директории.
 4. Все сервисы Pulse держать отдельно от ArtistFlow и widget.stackworks.ru.
@@ -369,14 +299,11 @@ ru.stackworks.swchat
 8. Любые действия с widget.stackworks.ru только после отдельной явной команды.
 9. Ведение `.sw` обязательно на протяжении всего проекта.
 10. Всё, что касается текущего production FastPanel, не трогать самостоятельно: только инструкции/шаблоны до отдельной команды пользователя.
-11. Собственный клиент Pulse начинать только после успешного тестирования Core через официальные Matrix-клиенты.
-12. В собственном клиенте Pulse скрывать Matrix-комнаты и показывать пользователю обычные чаты/диалоги/группы.
-13. Основной визуальный и UX-ориентир будущего клиента — Telegram.
-14. Админку Pulse делать отдельным защищённым модулем поверх Synapse Admin API.
-15. Текущий Android applicationId клиента: `ru.stackworks.swchat`.
-16. Регистрация и поиск людей должны быть реализованы как обычный мессенджерный UX без ручного ввода Matrix user_id с доменом.
-17. Бренд продукта зафиксирован как Pulse.
-18. Brand/UI rename делать отдельно от технического Dart package rename.
+11. Клиентские Android/Flutter задачи записывать в `viktor138irk/SWChat-App/.sw`, а не в серверный журнал.
+12. Серверный журнал хранит только интеграционные требования к клиенту: endpoint, API, регистрация, поиск, push/backend, admin.
+13. Публичный бренд продукта — Pulse, но серверный технический проект остаётся SWChat Core до отдельной миграции.
+
+---
 
 ## История разработки
 
@@ -388,10 +315,9 @@ ru.stackworks.swchat
 - Созданы `docs/ARCHITECTURE.md` и `docs/FASTPANEL_PROXY.md`.
 - Созданы `scripts/healthcheck.sh` и `scripts/install.sh`.
 - Подготовлен автоустановщик.
-- Зафиксировано начальное пользовательское имя продукта: SWChat.
 - Принято решение ставить Core на отдельный сервер.
 - Старый FastPanel-сервер использовать только для frontend/web-client в будущем.
-- Принято решение сначала тестировать Core официальными Matrix-клиентами, затем писать собственный клиент.
+- Принято решение сначала тестировать Core официальными Matrix-клиентами.
 - Исправлен `docker-compose.yml`: контейнеры переименованы в `swchat-*`, убран obsolete `version`, добавлены переменные `.env`.
 - Исправлена PostgreSQL locale для Synapse: добавлены `POSTGRES_INITDB_ARGS` с locale `C`.
 - Исправлена проблема compose down без env: `POSTGRES_PASSWORD` получил безопасный fallback.
@@ -414,26 +340,9 @@ ru.stackworks.swchat
 - Проверено: `registration_shared_secret` присутствует в `/opt/swchat/data/synapse/homeserver.yaml`.
 - Зафиксировано: bootstrap-регистрация администратора через `register_new_matrix_user` разрешена.
 - При входе в Element пойман `M_LIMIT_EXCEEDED` после нескольких попыток авторизации.
-- Принято UX-решение: клиент делать максимально в стиле Telegram.
-- Репозиторий клиентского приложения подтверждён: https://github.com/viktor138irk/SWChat-App.
-- FluffyChat импортирован в SWChat-App.
-- Проверен `pubspec.yaml` FluffyChat в SWChat-App.
 - Зафиксирована необходимость Admin Panel для управления пользователями и модерации.
-- SWChat-App успешно собран и запущен на Android-телефоне Samsung SM S928B.
-- Rust/rustup/cargo установлены на Windows для сборки `flutter_vodozemac/libvodozemac`.
-- Ошибка `libvodozemac_bindings_dart.so` устранена после установки Rust.
-- Авторизация в приложении SWChat-App/FluffyChat через homeserver `https://matrix.stackworks.ru` успешно прошла.
-- Принят Android package/applicationId: `ru.stackworks.swchat`.
 - Принято требование: регистрация прямо из приложения и поиск людей без необходимости вводить Matrix-домен.
-- Начат первичный Android-ребрендинг SWChat-App.
-- `build.gradle.kts` переведён с `chat.fluffy.fluffychat` на `ru.stackworks.swchat`.
-- Android namespace изменён на `ru.stackworks.swchat`.
-- `AndroidManifest.xml` обновлён: приложение переименовано в SWChat.
-- Deep link scheme изменён с `im.fluffychat` на `swchat`.
-- Auth callback scheme изменён с `im.fluffychat.auth` на `swchat.auth`.
-- Выявлена ошибка: преждевременная смена `pubspec.yaml name` ломает импорты `package:fluffychat/...`.
-- Зафиксировано правило: `pubspec.yaml name` оставлять `fluffychat` до отдельной массовой миграции импортов.
-- Зафиксировано новое рабочее имя пользовательского продукта: Pulse.
+- Зафиксировано публичное имя продукта: Pulse.
 
 ### 2026-05-09 — v0.1.2
 
@@ -449,7 +358,15 @@ ru.stackworks.swchat
 - `scripts/firewall_private_proxy.sh` разрешает доступ к Matrix 8008 только с FastPanel proxy IP и закрывает публичный прямой доступ к 8008.
 - По умолчанию firewall-скрипт не меняет default policy UFW, чтобы не запереть сервер случайно; для чистого Core можно запускать с `APPLY_UFW_DEFAULTS=yes`.
 - Зафиксировано правило: прямой доступ к Core:8008 из интернета должен быть закрыт, публичный вход только через `https://matrix.stackworks.ru`.
-- Продолжается staged-ребрендинг: Core-документация уже говорит Pulse/SWChat, Android-клиент трогать отдельным этапом через SWChat-App.
+
+### 2026-05-09 — разделение журналов
+
+- Серверный `.sw` очищен от подробной клиентской информации SWChat-App/Pulse UI.
+- Клиентская информация теперь должна храниться в `viktor138irk/SWChat-App/.sw`.
+- В серверном `.sw` оставлены только Core/Synapse/PostgreSQL/proxy/firewall/backend/admin и интеграционные требования к клиенту.
+- Зафиксировано правило: разработка идёт в одном чате как единый комбайн, но журналы ведутся отдельно по репозиториям.
+
+---
 
 ## Текущий этап установки
 
@@ -461,29 +378,25 @@ Core локально работает на новом отдельном сер
 https://matrix.stackworks.ru/_matrix/client/versions
 ```
 
-Клиентский репозиторий SWChat-App содержит импортированный FluffyChat.
-
-Android-клиент успешно запускается на Samsung SM S928B и авторизуется на нашем Matrix homeserver.
-
-Идёт staged-ребрендинг пользовательского продукта в Pulse.
-
 В Core-репозитории подготовлен безопасный механизм для private proxy bind и firewall-ограничения порта 8008.
 
-## Следующий шаг
+Клиентский Android-проект и его текущие задачи ведутся отдельно в:
 
-Следующий этап:
-- на Core-сервере проверить `.env`, выставить `MATRIX_BIND_HOST=192.168.0.141`, если FastPanel reverse proxy ходит к Core по private IP;
+```text
+https://github.com/viktor138irk/SWChat-App/.sw
+```
+
+---
+
+## Следующий шаг Core
+
+Следующий серверный этап:
+- на Core-сервере проверить `.env`;
+- выставить `MATRIX_BIND_HOST=192.168.0.141`, если FastPanel reverse proxy ходит к Core по private IP;
 - выполнить `sudo docker compose --env-file /opt/swchat/.env up -d`;
 - выполнить `sudo bash /opt/swchat/source/scripts/healthcheck.sh`;
 - с FastPanel proxy проверить `curl http://192.168.0.141:8008/_matrix/client/versions`;
 - применить firewall-ограничение: `sudo FASTPANEL_PROXY_IP=192.168.0.221 MATRIX_PORT=8008 bash /opt/swchat/source/scripts/firewall_private_proxy.sh`;
 - ещё раз проверить `https://matrix.stackworks.ru/_matrix/client/versions`;
-- вернуть `pubspec.yaml name: fluffychat` в SWChat-App, если локально или в GitHub оно было изменено;
-- провести UI-ребрендинг SWChat → Pulse в `app_config.dart`, `setting_keys.dart`, intro/login/about/menu;
-- убрать FluffyChat branding из Flutter onboarding, настроек, push-диалогов и локализаций;
-- внедрить default homeserver `matrix.stackworks.ru`;
-- подготовить собственные логотипы/splash/icon pack Pulse;
-- заложить регистрацию из приложения через backend или controlled Synapse registration;
-- заложить поиск людей по нику/имени/телефону без ручного ввода Matrix user_id;
-- проверить создание комнаты, отправку сообщений и файлов;
+- начать проектирование backend/API для регистрации, профилей и поиска людей;
 - отдельным этапом поднять готовую Synapse Admin UI или начать Pulse Admin Panel.
