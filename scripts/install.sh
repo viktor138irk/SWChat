@@ -11,6 +11,7 @@ ENV_FILE="${ENV_FILE:-$INSTALL_DIR/.env}"
 COMPOSE_FILE="${COMPOSE_FILE:-$SOURCE_DIR/docker-compose.yml}"
 SERVER_NAME="${SERVER_NAME:-matrix.stackworks.ru}"
 REPORT_STATS="${REPORT_STATS:-no}"
+MATRIX_BIND_HOST="${MATRIX_BIND_HOST:-127.0.0.1}"
 AUTO_START="${AUTO_START:-yes}"
 AUTO_INSTALL_DOCKER="${AUTO_INSTALL_DOCKER:-yes}"
 
@@ -94,14 +95,14 @@ install_docker() {
 
 safe_mkdirs() {
     log "Creating project directories"
-    mkdir -p "$INSTALL_DIR" "$SOURCE_DIR" "$DATA_DIR" "$BACKUP_DIR"
+    mkdir -p "$INSTALL_DIR" "$SOURCE_DIR" "$DATA_DIR" "$BACKUP_DIR" "$INSTALL_DIR/logs"
     mkdir -p "$DATA_DIR/postgres" "$DATA_DIR/synapse" "$DATA_DIR/coturn"
 }
 
 check_protected_assets() {
     log "Split-server policy"
-    echo "  - This installer configures SWChat Core only"
-    echo "  - FastPanel server is not involved"
+    echo "  - This installer configures SWChat/Pulse Core only"
+    echo "  - FastPanel server is not modified"
     echo "  - ArtistFlow is not involved"
     echo "  - widget.stackworks.ru is not involved"
 }
@@ -119,6 +120,10 @@ check_requirements() {
 write_env() {
     if [ -f "$ENV_FILE" ]; then
         warn ".env already exists, keeping it: $ENV_FILE"
+        if ! grep -q '^MATRIX_BIND_HOST=' "$ENV_FILE"; then
+            echo "MATRIX_BIND_HOST=$MATRIX_BIND_HOST" >> "$ENV_FILE"
+            warn "Added missing MATRIX_BIND_HOST=$MATRIX_BIND_HOST to existing .env"
+        fi
         return
     fi
 
@@ -131,6 +136,7 @@ write_env() {
     cat > "$ENV_FILE" <<EOF
 SERVER_NAME=$SERVER_NAME
 REPORT_STATS=$REPORT_STATS
+MATRIX_BIND_HOST=$MATRIX_BIND_HOST
 POSTGRES_DB=synapse
 POSTGRES_USER=synapse
 POSTGRES_PASSWORD=$POSTGRES_PASSWORD
@@ -210,8 +216,9 @@ show_next_steps() {
     echo
     echo "== Installation complete =="
     echo
-    echo "SWChat Core installed on this server"
+    echo "SWChat/Pulse Core installed on this server"
     echo "Matrix local endpoint: http://127.0.0.1:8008"
+    echo "Matrix bind host: $MATRIX_BIND_HOST"
     echo "Public Matrix server name: $SERVER_NAME"
     echo "Install dir: $INSTALL_DIR"
     echo
@@ -219,7 +226,9 @@ show_next_steps() {
     echo "  sudo bash $SOURCE_DIR/scripts/healthcheck.sh"
     echo "  curl http://127.0.0.1:8008/_matrix/client/versions"
     echo
-    echo "Next infrastructure step: point DNS $SERVER_NAME to this Core server IP and configure public HTTPS endpoint."
+    echo "If FastPanel reverse proxy is used over private LAN:"
+    echo "  1) set MATRIX_BIND_HOST to the Core private IP in $ENV_FILE"
+    echo "  2) run: sudo FASTPANEL_PROXY_IP=192.168.0.221 MATRIX_PORT=8008 bash $SOURCE_DIR/scripts/firewall_private_proxy.sh"
     echo
 }
 
